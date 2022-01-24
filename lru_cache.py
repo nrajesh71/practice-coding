@@ -1,14 +1,53 @@
-# This is a LRU Cache Implementation.
 # Write an LRU Cache which takes the cache_size as input
 # Implement the following methods:
-# 1. GET (key), SET (key, value), DELETE (key)
-# 2. Assume keys and values are strings
-# 3. LRU key should be automatically flushed when a 
-#    SET operation happens and max cache size has been reached
-# 4. GET and SET operations should update the key to the most recently used
-# Data Structures - Hash, Doubly Linked List (DLL), Node Object
-# Algorithm - Update DLL for every SET/GET/DELETE Op
-# **** SCROLL TO THE BOTTOM FOR Detail Analysis *******
+# GET (key), SET (key, value), DELETE (key)
+# Assume keys and values are strings
+# LRU key should be automatically flushed when a SET operation happens and max cache size has been reached
+# GET and SET operations should update the key to the most recently used
+
+# Data Structures Used
+#   Hash Table, NodeObject, Doubly Linked List, Global Variables to store MRU/LRU Keys and Values
+#     HASH - A Hash is used to store each key so retrieval is a O(1) operation
+#       - Key is mapped to a NodeID
+#       - MRU Key # Updated for each GET, SET, DELETE as required
+#       - LRU Key # Updated for each GET, SET, DELETE as required
+#     Node Object - Which is a node for a Doubly Linked List
+#       - Node consists of 
+#       - Value # The value that needs to be retrieved
+#       - Key  # This is optional and used primarily to debug. 
+#       - Next # pointer to next node
+#       - Prev # pointer to previous node
+#     Doubly Linked List
+#       - A doubly linked list is used to track the LRU and MRU
+#       - GET, SET, DELETE operations will require updating both LRU/MRU as needed
+# Algorithm
+#     Each Operation (GET, SET, DELETE) has multiple cases
+#     CASE A - MRU or Head Node Modification
+#     CASE B - LRU or Tail Node Modification
+#     CASE C - Middle Node Modification
+#     Conditions
+#       -  1 - If there are no nodes in the system e.g. SET
+#       -  2 - If there is just one node in the system. SET, GET, DELETE
+#       -  3 - If there are 2 Nodes in the system. I'm not sure if this is required but
+#                  this emerged as a special case. I may have overthought this
+#       -  4 - When there are more than 2 nodes
+# Analysis 
+#     HASH  **Time complexity O(1), Space Complexity O(n)**
+#       - Enables retrieval as a O(1) operation. 
+#       - All ops requires at least 1 Hash lookup. Probably max of 2 primarily 
+#         for inserting a new Key
+#     DOUBLY LINKED LIST - ** Time Complexity: O(1), Space Complexity O(n) **
+#       - MRU/LRU Tracking enables O(1) operation
+#       - In place Adjusting MRU/LRU during SET/GET/DELETE operations
+#         since we only need to change the pointer values
+#     FINAL ANALYSIS: Time - O(1); Space - O(n)
+#       - Time Complexity - HASH + DOUBLE_LL
+#           - O(1) ==> O(1) + O(1) = O(2 * 1) : Ignoring constant time of 2 ops we get O(1)
+#       - Space Complexity - HASH + DOUBLE_LL
+#           - O(n) ==> O(n) + O(n) = O(2n) : Ignoring constant space of 2 we get O(n)
+
+
+
 
 class Node:
     def __init__ (self, key, value)->None:
@@ -28,9 +67,9 @@ class LRUCache:
         self.keys = {}
         
 
-        print("\n\n\n***************")
+        print("\n***************")
         print (f"LRU Cache initialized. Max cache size = {self.cache_max}")
-        print("***************\n\n")
+        print("***************\n")
 
 
     def set (self, key, value):
@@ -46,7 +85,7 @@ class LRUCache:
             self.delete(self.lru.key)
         
         if self.mru == None:
-            print("Creating FIRST NODE in cache\n")
+            print(f"Adding {key} - Creating FIRST NODE in cache")
             new_node = Node(key,value)  
             new_node.key = key
             new_node.value = value
@@ -58,7 +97,7 @@ class LRUCache:
             new_node.next = None
 
         else:
-            print(f"Adding {key} TO HEAD of Cache\n")
+            print(f"Adding {key} TO HEAD of Cache")
             cur = self.mru
             new_node = Node(key,value)
             new_node.key = key
@@ -73,16 +112,16 @@ class LRUCache:
         # Add the Key to the Hash map. Value is the address of the new_node
         self.keys[key] = new_node
         self.cache_size += 1
-        print (f"Curr cache size ={self.cache_size}")
+        #print (f"Curr cache size ={self.cache_size}")
         return True
 
 
     def get (self, key):
-        print ("\nGET")
+        #print ("\nGET")
         nodeval = self.keys.get(key)
         if not nodeval: return False
 
-        print(f"key = {nodeval.key} val = {nodeval.value}")
+        #print(f"key = {nodeval.key} val = {nodeval.value}")
 
         # Some temp values for use later.
         temp = self.mru
@@ -94,12 +133,12 @@ class LRUCache:
 
         # Case 1 - If it os the MRU node itself then dont do anything.
         if nodeval == self.mru:
-            print("accessing MRU")
+            #print("accessing MRU")
             pass #Do not do anything
             
         # Case 2 - There are only two nodes. Swap the LRU and MRU
         elif nodeval == self.lru and nodeval == self.mru.next:
-            print("Only two nodes in the system. Swapping LRU and MRU")
+            #print("Only two nodes in the system. Swapping LRU and MRU")
             self.mru = self.lru
             self.lru = temp
             old_mru.next = None
@@ -107,11 +146,10 @@ class LRUCache:
             old_lru.prev = None
             old_lru.next = self.lru
 
-        # Case 3 - There are more than two nodes. 
-        # The node is LRU. Move it to MRU
+        # Case 3 - There are more than two nodes. The node is LRU. Move it to MRU
         elif nodeval == self.lru:
-            print ("Accessing LRU")
-            print (f"bringing node key {nodeval.key} and value {nodeval.value} to MRU")
+            #print ("Accessing LRU")
+            #print (f"bringing node key {nodeval.key} and value {nodeval.value} to MRU")
             self.lru = nodeval.prev
             nodeval.prev.next = None
             nodeval.next = self.mru
@@ -119,11 +157,10 @@ class LRUCache:
             self.mru = nodeval
             nodeval.prev = None
 
-        # Case 4 - The node is somewhere in the middle of the list. 
-        #          Move it to MRU.
+        # Case 4 - The node is somewhere int he middle of the list. Move it to MRU.
         elif nodeval.prev != None and nodeval.next != None:
-            print ("Accessing MIDDLE Node")
-            print(f"nodeval.prev = {nodeval.prev.key}, nodeval.next = {nodeval.next.key} ")
+            #print ("Accessing MIDDLE Node")
+            #print(f"nodeval.prev = {nodeval.prev.key}, nodeval.next = {nodeval.next.key} ")
             nodeval.prev.next = nodeval.next
             nodeval.next.prev = nodeval.prev
             nodeval.next = self.mru
@@ -132,7 +169,7 @@ class LRUCache:
             nodeval.prev = None
 
         else:
-            print ("ERROR! Catastrophically wrong went here.")
+            print ("ERROR! Something catastrophically wrong went here. This should not happen!")
             #print(f"nodeval.prev = {nodeval.prev.key}, nodeval.next = {nodeval.next.key} ")
 
         # Return the nodeval
@@ -142,7 +179,7 @@ class LRUCache:
             return None
 
     def delete (self,key):
-        print("\nDELETE")
+        #print("\nDELETE")
 
         # Find the address of the node that holds the value to the key
         nodeval = self.keys.get(key)
@@ -151,30 +188,30 @@ class LRUCache:
             print(f"Key {key} not found")
             return
 
-        print(f"key = {nodeval.key} val = {nodeval.value}")
+        #print(f"key = {nodeval.key} val = {nodeval.value}")
 
         # Case 0 - Deleting the only node in cache
         if self.mru == nodeval and self.lru == nodeval:
-            print("Deleting ONLY NODE")
+            #print("Deleting ONLY NODE")
             self.mru = None
             self.lru = None
 
         # Case 1 - Delete the MRU node
         elif self.mru == nodeval:
-            print("Deleting MRU")
+            #print("Deleting MRU")
             self.mru = nodeval.next
             nodeval.next.prev = None
         
         # Case 2 - Delete the LRU node
         elif self.lru == nodeval:
-            print("Deleting LRU")
+            #print("Deleting LRU")
             self.lru = nodeval.prev
             nodeval.prev.next = None
 
         # Case 3 - Delete a node somewhere in the middle
         else:
-            print("Deletig MIDDLE Node\n")
-            print(f"prev = {nodeval.prev.value}, next ={nodeval.next.value}")
+            #print("Deletig MIDDLE Node\n")
+            #print(f"prev = {nodeval.prev.value}, next ={nodeval.next.value}")
             nodeval.prev.next = nodeval.next
             nodeval.next.prev = nodeval.prev
 
@@ -188,7 +225,7 @@ class LRUCache:
         self.keys.pop(key)
 
         self.cache_size -=1
-        print(f"cache_size = {self.cache_size}")
+        #print(f"cache_size = {self.cache_size}")
 
 
     def traverse (self):
@@ -244,112 +281,85 @@ class LRUCache:
         return None
 
 
-
 lru_cache = LRUCache(4)
+
+print("Adding 4 keys")
 lru_cache.set("1", "one")
 lru_cache.set("2", "two")
 lru_cache.set("3", "three")
 lru_cache.set("4", "four")
-
 lru_cache.traverse()
 lru_cache.reverse()
+print("\n")
 
+
+print("Adding a new node 5")
 lru_cache.set("5", "five")
-
-
-lru_cache.get("1")
 lru_cache.traverse()
 lru_cache.reverse()
+print("\n")
 
+print("Get Operations on 1, 2, 1, 1, 4")
+print("1 has been deleted, so it shouldnt matter")
+lru_cache.get("1")
 lru_cache.get("2")
-lru_cache.traverse()
-lru_cache.reverse()
-
 lru_cache.get("1")
+lru_cache.get("1")
+lru_cache.get("4")
 lru_cache.traverse()
 lru_cache.reverse()
+print("\n")
 
+print("DELETE Operations on 1 and 4")
 lru_cache.delete("1")
-lru_cache.traverse()
-lru_cache.reverse()
-
 lru_cache.delete("4")
 lru_cache.traverse()
 lru_cache.reverse()
+print("\n")
 
+print("GET Operations on node 3 and 2")
 lru_cache.get("3")
-lru_cache.traverse()
-lru_cache.reverse()
-
 lru_cache.get("2")
 lru_cache.traverse()
 lru_cache.reverse()
+print("\n")
 
+print ("Delete node 3")
 lru_cache.delete("3")
 lru_cache.traverse()
 lru_cache.reverse()
+print("\n")
 
+
+print("Check HASH if 2 and 3 exist.")
+print("2 should exist, 3 should not")
 lru_cache.check_keymap("2")
-
-lru_cache.delete("2")
+lru_cache.check_keymap("3")
 lru_cache.traverse()
 lru_cache.reverse()
 
-print(lru_cache.keys.get("1"))
+print("\n")
+print ("Delete the last node 2 and 5")
+lru_cache.delete("2")
+lru_cache.delete("5")
+lru_cache.traverse()
+lru_cache.reverse()
+print ("List should be empty at this time")
 
+
+print("\n")
+print("Check if 2 exists in the cache") 
 lru_cache.check_keymap("2")
 
-print("***********")
-lru_cache.traverse()
+print("\n")
+print("Adding nodes 5, 2, 1, 9, 10")
 lru_cache.set("5", "five")
 lru_cache.set("2", "two")
 lru_cache.set("1", "one")
 lru_cache.set("9", "nine")
+lru_cache.traverse()
+
+print("\n")
 lru_cache.set("10", "ten")
 lru_cache.traverse()
-print("***********")
-
-
-
-
-# Data Structures Used
-#   Hash Table, NodeObject, Doubly Linked List, Global Variables to store MRU/LRU Keys and Values
-#     HASH - A Hash is used to store each key so retrieval is a O(1) operation
-#       - Key is mapped to a NodeID
-#       - MRU Key # Updated for each GET, SET, DELETE as required
-#       - LRU Key # Updated for each GET, SET, DELETE as required
-#     Node Object - Which is a node for a Doubly Linked List
-#       - Node consists of 
-#       - Value # The value that needs to be retrieved
-#       - Key  # This is optional and used primarily to debug. 
-#       - Next # pointer to next node
-#       - Prev # pointer to previous node
-#     Doubly Linked List
-#       - A doubly linked list is used to track the LRU and MRU
-#       - GET, SET, DELETE operations will require updating both LRU/MRU as needed
-# Algorithm
-#     Each Operation (GET, SET, DELETE) has multiple cases
-#     CASE A - MRU or Head Node Modification
-#     CASE B - LRU or Tail Node Modification
-#     CASE C - Middle Node Modification
-#     Conditions
-#       -  1 - If there are no nodes in the system e.g. SET
-#       -  2 - If there is just one node in the system. SET, GET, DELETE
-#       -  3 - If there are 2 Nodes in the system. I'm not sure if this is required but
-#                  this emerged as a special case. I may have overthought this
-#       -  4 - When there are more than 2 nodes
-# Analysis 
-#     HASH  **Time complexity O(1), Space Complexity O(n)**
-#       - Enables retrieval as a O(1) operation. 
-#       - All ops requires at least 1 Hash lookup. Probably max of 2 primarily 
-#         for inserting a new Key
-#     DOUBLY LINKED LIST - ** Time Complexity: O(1), Space Complexity O(n) **
-#       - MRU/LRU Tracking enables O(1) operation
-#       - In place Adjusting MRU/LRU during SET/GET/DELETE operations
-#         since we only need to change the pointer values
-#     FINAL ANALYSIS: Time - O(1); Space - O(n)
-#       - Time Complexity - HASH + DOUBLE_LL
-#           - O(1) ==> O(1) + O(1) = O(2 * 1) : Ignoring constant time of 2 ops we get O(1)
-#       - Space Complexity - HASH + DOUBLE_LL
-#           - O(n) ==> O(n) + O(n) = O(2n) : Ignoring constant space of 2 we get O(n)
-
+print("5 got deleted as it was the LRU")
